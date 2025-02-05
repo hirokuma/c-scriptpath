@@ -71,8 +71,8 @@ static const uint64_t PREV_AMOUNT = 20000UL;
     0xe3, 0x1e, 0xe3, 0xed, 0xdd, 0x9d, 0x1a, 0xb1,\
     0xa9, 0x56, 0x54, 0xc6, 0x46, 0x04, 0xc4, 0xd1,\
 }
-const uint32_t OUTPOINT_INDEX = 0;
-const uint32_t SEQUENCE = 0xffffffff;
+static const uint32_t OUTPOINT_INDEX = 0;
+static const uint32_t SEQUENCE = 0xffffffff;
 static const char OUTADDR[] = "bc1qphn5thzcmrnzum68hh3se4vqf2pqzmu7hl34z0";
 static const uint64_t OUT_AMOUNT = 15000UL;
 
@@ -300,14 +300,14 @@ void sample1(void)
         return;
     }
 
-    struct wally_map *prevScriptPubKey;
-    rc = wally_map_init_alloc(1, NULL, &prevScriptPubKey);
+    struct wally_map *scriptPubKeys;
+    rc = wally_map_init_alloc(1, NULL, &scriptPubKeys);
     if (rc != WALLY_OK) {
         printf("error: wally_map_init_alloc fail: %d\n", rc);
         return;
     }
     rc = wally_map_add_integer(
-        prevScriptPubKey,
+        scriptPubKeys,
         0, // key
         WITNESS_PROGRAM, sizeof(WITNESS_PROGRAM));
     if (rc != WALLY_OK) {
@@ -322,7 +322,7 @@ void sample1(void)
         sig, sizeof(sig),
         0,
         tx,
-        prevScriptPubKey,
+        scriptPubKeys,
         VALUES, ARRAY_SIZE(VALUES),
         leaf_script.buf.data,  leaf_script.pos,
         WALLY_SIGHASH_ALL,
