@@ -187,8 +187,8 @@ void sample2(void)
 
     // merkle root
     const uint256_t *leaves[2] = {
-        &leaf_hash_bob,
         &leaf_hash_alice,
+        &leaf_hash_bob,
     };
     uint256_t merkle_root;
     rc = calc_merkle_root(&merkle_root, leaves, ARRAY_SIZE(leaves));

@@ -7,9 +7,18 @@
 
 static int _merge(uint256_t *merged, const uint256_t *p1, const uint256_t *p2)
 {
+    const uint8_t *s1;
+    const uint8_t *s2;
+    if (memcmp(p1, p2, SHA256_LEN) < 0) {
+        s1 = p1->data;
+        s2 = p2->data;
+    } else {
+        s1 = p2->data;
+        s2 = p1->data;
+    }
     uint8_t buf[SHA256_LEN * 2];
-    memcpy(buf, p1->data, SHA256_LEN);
-    memcpy(buf + SHA256_LEN, p2->data, SHA256_LEN);
+    memcpy(buf, s1, SHA256_LEN);
+    memcpy(buf + SHA256_LEN, s2, SHA256_LEN);
     int rc = wally_bip340_tagged_hash(
         buf, sizeof(buf),
         "TapBranch",
@@ -21,7 +30,6 @@ static uint256_t *_mtree(uint256_t *in, uint32_t *cnt, int keep)
 {
     uint32_t prev_cnt = *cnt;
 
-#warning leftが小さくなるようにソートが必要
     uint256_t *out = (uint256_t *)malloc(sizeof(uint256_t) * (*cnt + 1) / 2);
     *cnt /= 2;
     for (uint32_t i = 0; i < *cnt; i++) {
