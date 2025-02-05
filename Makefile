@@ -8,6 +8,7 @@ C_FILES += \
 	btc_merkle.c\
 	btc_p2tr_scriptpath.c\
 	sample1.c\
+	sample2.c\
 	main.c
 
 # object files

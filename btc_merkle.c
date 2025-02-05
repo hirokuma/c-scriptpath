@@ -13,7 +13,7 @@ static int _merge(uint256_t *merged, const uint256_t *p1, const uint256_t *p2)
     int rc = wally_bip340_tagged_hash(
         buf, sizeof(buf),
         "TapBranch",
-        merged->data, sizeof(*merged));
+        merged->data, sizeof(uint256_t));
     return rc;
 }
 
@@ -21,6 +21,7 @@ static uint256_t *_mtree(uint256_t *in, uint32_t *cnt, int keep)
 {
     uint32_t prev_cnt = *cnt;
 
+#warning leftが小さくなるようにソートが必要
     uint256_t *out = (uint256_t *)malloc(sizeof(uint256_t) * (*cnt + 1) / 2);
     *cnt /= 2;
     for (uint32_t i = 0; i < *cnt; i++) {
