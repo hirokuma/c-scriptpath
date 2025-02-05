@@ -231,30 +231,8 @@ static void address(void)
     const uint8_t *tweakXonlyPubKey = tweakPubKey + 1;
     if (memcmp(tweakXonlyPubKey, TWEAK_PUBKEY, sizeof(TWEAK_PUBKEY)) != 0) {
         printf("tweakXonlyPubKey not same\n");
-    }
-
-#if 0
-    uint8_t tweakPrivKey[EC_PRIVATE_KEY_LEN];
-    rc = wally_ec_private_key_bip341_tweak(
-        SCRIPT_PRIVKEY, sizeof(SCRIPT_PRIVKEY),
-        NULL, 0,
-        0,
-        tweakPrivKey, sizeof(tweakPrivKey));
-    if (rc != WALLY_OK) {
-        printf("error: wally_ec_private_key_bip341_tweak fail: %d\n", rc);
         return;
     }
-    printf("tweak privkey:   ");
-    dump(tweakPrivKey, sizeof(tweakPrivKey));
-    if (memcmp(tweakPrivKey, TWEAK_PRIVKEY, sizeof(TWEAK_PRIVKEY)) != 0) {
-        printf("tweakPrivKey not same\n");
-    }
-
-    // uint8_t witnessProgram[WALLY_SEGWIT_V1_ADDRESS_PUBKEY_LEN];
-    // witnessProgram[0] = OP_1;
-    // witnessProgram[1] = EC_XONLY_PUBLIC_KEY_LEN;
-    // memcpy(&witnessProgram[2], tweakPubKey + 1, sizeof(tweakPubKey) - 1);
-    // size_t witnessProgramLen = sizeof(witnessProgram);
 
     uint8_t witnessProgram[WALLY_WITNESSSCRIPT_MAX_LEN];
     size_t witnessProgramLen = 0;
@@ -269,6 +247,10 @@ static void address(void)
     }
     printf("witness program: ");
     dump(witnessProgram, witnessProgramLen);
+    if (memcmp(witnessProgram, WITNESS_PROGRAM, sizeof(WITNESS_PROGRAM)) != 0) {
+        printf("witnessProgram not same\n");
+        return;
+    }
 
     char *address;
     rc = wally_addr_segwit_from_bytes(
@@ -286,6 +268,23 @@ static void address(void)
     }
 
     wally_free_string(address);
+
+#if 0
+    uint8_t tweakPrivKey[EC_PRIVATE_KEY_LEN];
+    rc = wally_ec_private_key_bip341_tweak(
+        INTERNAL_PUBKEY, sizeof(INTERNAL_PUBKEY),
+        merkle_root.data, sizeof(merkle_root),
+        0,
+        tweakPrivKey, sizeof(tweakPrivKey));
+    if (rc != WALLY_OK) {
+        printf("error: wally_ec_private_key_bip341_tweak fail: %d\n", rc);
+        return;
+    }
+    printf("tweak privkey:   ");
+    dump(tweakPrivKey, sizeof(tweakPrivKey));
+    if (memcmp(tweakPrivKey, TWEAK_PRIVKEY, sizeof(TWEAK_PRIVKEY)) != 0) {
+        printf("tweakPrivKey not same\n");
+    }
 #endif
 }
 
