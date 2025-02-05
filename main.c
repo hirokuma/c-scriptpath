@@ -72,6 +72,7 @@ static const uint64_t PREV_AMOUNT = 20000UL;
     0xa9, 0x56, 0x54, 0xc6, 0x46, 0x04, 0xc4, 0xd1,\
 }
 const uint32_t OUTPOINT_INDEX = 0;
+const uint32_t SEQUENCE = 0xffffffff;
 static const char OUTADDR[] = "bc1qphn5thzcmrnzum68hh3se4vqf2pqzmu7hl34z0";
 static const uint64_t OUT_AMOUNT = 15000UL;
 
@@ -186,7 +187,6 @@ static void exec(void)
     }
 
     btc_buf_free(&leaf_msg);
-    btc_bufp_free(&leaf_script);
 
     // merkle root
     const uint256_t *leaves[1] = {
@@ -215,8 +215,9 @@ static void exec(void)
         printf("error: wally_ec_public_key_bip341_tweak fail: %d\n", rc);
         return;
     }
-    printf("tweak pubkey:    ");
+    printf("tweak pubkey: ");
     dump(tweakPubKey, sizeof(tweakPubKey));
+    printf("parity: %d\n", tweakPubKey[0] == 0x03);
     const uint8_t *tweakXonlyPubKey = tweakPubKey + 1;
     if (memcmp(tweakXonlyPubKey, TWEAK_PUBKEY, sizeof(TWEAK_PUBKEY)) != 0) {
         printf("tweakXonlyPubKey not same\n");
@@ -236,7 +237,8 @@ static void exec(void)
     }
     printf("witness program: ");
     dump(witnessProgram, witnessProgramLen);
-    if (memcmp(witnessProgram, WITNESS_PROGRAM, sizeof(WITNESS_PROGRAM)) != 0) {
+    if (witnessProgramLen != sizeof(WITNESS_PROGRAM) ||
+            memcmp(witnessProgram, WITNESS_PROGRAM, sizeof(WITNESS_PROGRAM)) != 0) {
         printf("witnessProgram not same\n");
         return;
     }
@@ -276,11 +278,9 @@ static void exec(void)
     }
 #endif
 
-#if 0
-    int rc;
     struct wally_tx *tx = NULL;
 
-    // create sigHash, sig and wally_tx
+    // create sighash, sig and wally_tx
     rc = wally_tx_init_alloc(
         2, // version
         0, // locktime
@@ -295,9 +295,11 @@ static void exec(void)
     const struct wally_tx_input TX_INPUT = {
         .txhash = OUTPOINT_TXHASH,
         .index = OUTPOINT_INDEX,
-        .sequence = 0xffffffff,
+        .sequence = SEQUENCE,
+        // no scriptSig
         .script = NULL,
         .script_len = 0,
+        // "witness" will be set later
         .witness = NULL,
         .features = 0,
     };
@@ -317,9 +319,8 @@ static void exec(void)
         printf("error: wally_addr_segwit_to_bytes fail: %d\n", rc);
         return;
     }
-
     const struct wally_tx_output TX_OUTPUT = {
-        .satoshi = SENT_AMOUNT,
+        .satoshi = OUT_AMOUNT,
         .script = outAddrByte,
         .script_len = outAddrLen,
         .features = 0,
@@ -330,14 +331,14 @@ static void exec(void)
         return;
     }
 
-    struct wally_map *scriptPubKey;
-    rc = wally_map_init_alloc(1, NULL, &scriptPubKey);
+    struct wally_map *prevScriptPubKey;
+    rc = wally_map_init_alloc(1, NULL, &prevScriptPubKey);
     if (rc != WALLY_OK) {
         printf("error: wally_map_init_alloc fail: %d\n", rc);
         return;
     }
     rc = wally_map_add_integer(
-        scriptPubKey,
+        prevScriptPubKey,
         0, // key
         WITNESS_PROGRAM, sizeof(WITNESS_PROGRAM));
     if (rc != WALLY_OK) {
@@ -345,36 +346,36 @@ static void exec(void)
         return;
     }
 
-    uint8_t sigHash[EC_MESSAGE_HASH_LEN];
+    uint8_t sighash[EC_MESSAGE_HASH_LEN];
     const uint64_t VALUES[] = { PREV_AMOUNT };
     rc = wally_tx_get_btc_taproot_signature_hash(
         tx,
         0,
-        scriptPubKey, // scripts
+        prevScriptPubKey, // scripts
         VALUES, ARRAY_SIZE(VALUES),
-        NULL,  0, // tapleaf
+        leaf_script.buf.data,  leaf_script.pos, // tapleaf
         0x00, // key version
         WALLY_NO_CODESEPARATOR, // codesep position
         NULL, 0, // annex
         WALLY_SIGHASH_ALL,
         0,
-        sigHash, sizeof(sigHash)
+        sighash, sizeof(sighash)
     );
-    wally_map_free(scriptPubKey);
+    wally_map_free(prevScriptPubKey);
     if (rc != WALLY_OK) {
         printf("error: wally_tx_get_btc_taproot_signature_hash fail: %d\n", rc);
         return;
     }
-    printf("sigHash: ");
-    dump(sigHash, sizeof(sigHash));
-    if (memcmp(sigHash, SIGHASH, sizeof(sigHash)) != 0) {
-        printf("error: sigHash not same\n");
+    printf("sighash: ");
+    dump(sighash, sizeof(sighash));
+    if (memcmp(sighash, SIGHASH, sizeof(sighash)) != 0) {
+        printf("error: sighash not same\n");
     }
 
     uint8_t sig[EC_SIGNATURE_LEN + 1];
     rc = wally_ec_sig_from_bytes(
-        TWEAK_PRIVKEY, sizeof(TWEAK_PRIVKEY),
-        sigHash, sizeof(sigHash),
+        LEAF_PRIVKEY, sizeof(LEAF_PRIVKEY),
+        sighash, sizeof(sighash),
         EC_FLAG_SCHNORR,
         sig, EC_SIGNATURE_LEN
     );
@@ -390,18 +391,44 @@ static void exec(void)
         printf("error: sig not same\n");
     }
 
-    struct wally_tx_witness_stack *witness;
-    rc = wally_witness_p2tr_from_sig(sig, sizeof(sig), &witness);
+    struct wally_tx_witness_stack *wit_stack;
+    rc = wally_tx_witness_stack_init_alloc(3, &wit_stack);
     if (rc != WALLY_OK) {
-        printf("error: wally_witness_p2tr_from_sig fail: %d\n", rc);
+        printf("error: wally_tx_witness_stack_init_alloc fail: %d\n", rc);
         return;
     }
-    rc = wally_tx_set_input_witness(tx, 0, witness);
+
+    // [0] sig
+    rc = wally_tx_witness_stack_add(wit_stack, sig, sizeof(sig));
+    if (rc != WALLY_OK) {
+        printf("error: wally_tx_witness_stack_add[0] fail: %d\n", rc);
+        return;
+    }
+    // [1] leaf script
+    rc = wally_tx_witness_stack_add(wit_stack, leaf_script.buf.data, leaf_script.pos);
+    btc_bufp_free(&leaf_script);
+    if (rc != WALLY_OK) {
+        printf("error: wally_tx_witness_stack_add[1] fail: %d\n", rc);
+        return;
+    }
+    // [2] control block
+    btc_bufp_t ctrl_block;
+    btc_bufp_alloc(&ctrl_block, 1 + EC_XONLY_PUBLIC_KEY_LEN);
+    btc_bufp_push1(&ctrl_block, 0xc0 + (tweakPubKey[0] == 0x03));
+    btc_bufp_push(&ctrl_block, INTERNAL_PUBKEY, sizeof(INTERNAL_PUBKEY));
+    rc = wally_tx_witness_stack_add(wit_stack, ctrl_block.buf.data, ctrl_block.pos);
+    btc_bufp_free(&ctrl_block);
+    if (rc != WALLY_OK) {
+        printf("error: wally_tx_witness_stack_add[1] fail: %d\n", rc);
+        return;
+    }
+    // set witness to input
+    rc = wally_tx_set_input_witness(tx, 0, wit_stack);
     if (rc != WALLY_OK) {
         printf("error: wally_tx_set_input_witness fail: %d\n", rc);
         return;
     }
-    wally_tx_witness_stack_free(witness);
+    wally_tx_witness_stack_free(wit_stack);
 
     uint8_t txData[1024];
     size_t txLen = 0;
@@ -413,7 +440,7 @@ static void exec(void)
         printf("error: wally_tx_to_bytes fail: %d\n", rc);
         return;
     }
-    printf("hex: ");
+    printf("tx: ");
     dump(txData, txLen);
 
     if (txLen != sizeof(TXDATA)) {
@@ -423,7 +450,6 @@ static void exec(void)
     }
 
     wally_tx_free(tx);
-#endif
 }
 
 int main(int argc, char *argv[])
