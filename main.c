@@ -138,13 +138,6 @@ static const uint8_t TXDATA[] = {
     0x00, 0x00, 0x00, 0x00,
 };
 
-static void help(const char *cmd)
-{
-    printf("usage:\n");
-    printf("  %s <1 or 2>\n", cmd);
-    printf("     1: address\n");
-    printf("     2: spent transaction\n");
-}
 
 static void dump(const uint8_t *data, size_t len)
 {
@@ -154,11 +147,7 @@ static void dump(const uint8_t *data, size_t len)
     printf("\n");
 }
 
-static void createKey()
-{
-}
-
-static void address(void)
+static void exec(void)
 {
     int rc;
 
@@ -286,10 +275,7 @@ static void address(void)
         printf("tweakPrivKey not same\n");
     }
 #endif
-}
 
-static void spent(void)
-{
 #if 0
     int rc;
     struct wally_tx *tx = NULL;
@@ -444,29 +430,13 @@ int main(int argc, char *argv[])
 {
     int rc;
 
-    if (argc != 2) {
-        help(argv[0]);
-        return 1;
-    }
-
-    if (argv[1][1] != '\0') {
-        help(argv[0]);
-        return 1;
-    }
-    if (argv[1][0] == '1') {
-        address();
-    } else if (argv[1][0] == '2') {
-        spent();
-    } else {
-        help(argv[0]);
-        return 1;
-    }
-
     rc = wally_init(0);
     if (rc != WALLY_OK) {
         printf("error: wally_init fail: %d\n", rc);
         return 1;
     }
+
+    exec();
 
     rc = wally_cleanup(0);
     if (rc != WALLY_OK) {

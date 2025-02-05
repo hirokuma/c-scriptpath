@@ -33,9 +33,11 @@ make
 ## run
 
 ```console
-$ ./tst 1
+$ ./tst
 script: 206d4ddc0e47d2e8f82cbe2fc2d0d749e7bd3338112cecdc76d8f831ae6620dbe0ac
 tap leaf hash: 858dfe26a3dd48a2c1fcee1d631f0aadf6a61135fc51f75758e945bca534ef16
 merkle root: 858dfe26a3dd48a2c1fcee1d631f0aadf6a61135fc51f75758e945bca534ef16
 tweak pubkey:    02f3778defe5173a9bf7169575116224f961c03c725c0e98b8da8f15df29194b80
+witness program: 5120f3778defe5173a9bf7169575116224f961c03c725c0e98b8da8f15df29194b80
+address: bc1p7dmcmml9zuafhackj463zc3yl9suq0rjts8f3wx63u2a72gefwqqku46c7
 ```
