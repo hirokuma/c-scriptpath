@@ -65,26 +65,32 @@ int sample3(void) {
     rc = wally_ec_public_key_from_private_key(sender_private_key, EC_PRIVATE_KEY_LEN, sender_pubkey, sizeof(sender_pubkey));
     assert(rc == WALLY_OK);
 
-
     uint8_t sender_scriptpubkey[WALLY_SCRIPTPUBKEY_P2WPKH_LEN];
     size_t sender_scriptpubkey_len = 0;
-
     rc = wally_addr_segwit_to_bytes(sender_address, "bc", 0, sender_scriptpubkey, sizeof(sender_scriptpubkey), &sender_scriptpubkey_len);
     assert(rc == WALLY_OK);
+
     uint32_t flags = WALLY_SIGHASH_ALL;
     uint8_t signature[EC_SIGNATURE_LEN + 1];
 
+    // sighashの計算
+    uint8_t sighash[SHA256_LEN];
     struct wally_map *prev_scripts = NULL;
     rc = wally_map_init_alloc(1, NULL, &prev_scripts);
     assert(rc == WALLY_OK);
-
     rc = wally_map_add_integer(prev_scripts, 0, sender_scriptpubkey, sender_scriptpubkey_len);
     assert(rc == WALLY_OK);
-
     uint64_t values[] = {sender_satoshi};
 
-    rc = wally_tx_sign(tx, prev_scripts, values, 1, sender_private_key, EC_PRIVATE_KEY_LEN, flags, signature, sizeof(signature));
+    rc = wally_tx_get_btc_signature_hash(tx, 0, prev_scripts, values, 1, sender_scriptpubkey, sender_scriptpubkey_len, 0, WALLY_NO_CODESEPARATOR, NULL, 0, flags, sighash, sizeof(sighash));
     assert(rc == WALLY_OK);
+
+
+    // wally_ec_sig_from_bytesを使った署名
+    rc = wally_ec_sig_from_bytes(sender_private_key, EC_PRIVATE_KEY_LEN, sighash, sizeof(sighash), EC_FLAG_ECDSA, signature, sizeof(signature) - 1);
+    assert(rc == WALLY_OK);
+    signature[EC_SIGNATURE_LEN] = flags; // sighash type を追加
+
 
     struct wally_tx_witness_stack *witness = NULL;
     rc = wally_tx_witness_stack_init_alloc(2, &witness);
@@ -97,12 +103,12 @@ int sample3(void) {
     rc = wally_tx_set_input_witness(tx, 0, witness);
     assert(rc == WALLY_OK);
 
-
     // シリアライズ
     uint8_t tx_bytes[1024];
     size_t tx_bytes_written = 0;
     rc = wally_tx_to_bytes(tx, WALLY_TX_FLAG_USE_WITNESS, tx_bytes, sizeof(tx_bytes), &tx_bytes_written);
     assert(rc == WALLY_OK);
+
 
     // 後処理
     wally_map_free(prev_scripts);
