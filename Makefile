@@ -10,6 +10,7 @@ C_FILES += \
 	sample1.c\
 	sample2.c\
 	sample3.c\
+	sample4.c\
 	main.c
 
 # object files

@@ -15,14 +15,15 @@
 static const char ADDR_FAMILY[] = "bcrt";
 
 /*
-$ btcc 155 155 OP_CHECKLOCKTIMEVERIFY OP_EQUAL
-029b00029b00b187
+$ btcc 5 OP_CHECKSEQUENCEVERIFY OP_EQUAL
+warning: ambiguous input 5 is interpreted as a numeric value; use OP_5 to force into opcode
+55b287
 */
 static const uint8_t SCRIPT[] = {
-    0x02, 0x9b, 0x00, 0xb1, 0x87,
+    0x55, 0xb2, 0x87,
 };
 static const uint8_t REDEEM_SCRIPT[] = {
-    0x9b, 0x00,
+    0x05,
 };
 
 static const uint8_t INTERNAL_PUBKEY[] = {
@@ -34,16 +35,16 @@ static const uint8_t INTERNAL_PUBKEY[] = {
 
 // outpoint txhash(not txid)
 #define OUTPOINT_TXHASH { \
-    0x4e, 0x01, 0xb6, 0xc2, 0x35, 0x4f, 0x7d, 0x4a,\
-    0x6d, 0xf8, 0xbd, 0xb8, 0x45, 0x7f, 0x08, 0x7b,\
-    0xd4, 0x2e, 0xaa, 0xc7, 0xc4, 0xe1, 0x03, 0xe8,\
-    0xee, 0x25, 0xa1, 0x48, 0x18, 0x25, 0x4c, 0x98,\
+    0x7b, 0x17, 0x18, 0x9a, 0xf8, 0x16, 0x26, 0x3d,\
+    0xb1, 0xd2, 0xea, 0x5b, 0x6a, 0xd4, 0xd6, 0xce,\
+    0x68, 0x08, 0xe4, 0x9a, 0xd9, 0x6c, 0x5d, 0x63,\
+    0x9f, 0x66, 0xc7, 0xd2, 0x22, 0xd8, 0xa1, 0x72,\
 }
-static const uint32_t OUTPOINT_INDEX = 0;
-static const uint32_t SEQUENCE = 0xfffffffd;
+static const uint32_t OUTPOINT_INDEX = 1;
+static const uint32_t SEQUENCE = 5;
 static const char OUTADDR[] = "bcrt1q6ytggc6fyaphzkr89yghca9l9fra2vgw7mtlen";
 static const uint64_t OUT_AMOUNT = 15000UL;
-static const uint32_t LOCKTIME = 155;
+static const uint32_t LOCKTIME = 0;
 
 static void dump(const uint8_t *data, size_t len)
 {
@@ -53,7 +54,7 @@ static void dump(const uint8_t *data, size_t len)
     printf("\n");
 }
 
-void sample3(void)
+void sample4(void)
 {
     int rc;
 
