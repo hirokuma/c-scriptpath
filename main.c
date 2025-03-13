@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "libwally-core/include/wally_core.h"
+#include "wally_core.h"
 
 void sample1(void);
 void sample2(void);

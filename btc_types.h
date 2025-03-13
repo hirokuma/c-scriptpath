@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include "libwally-core/include/wally_crypto.h"
+#include "wally_crypto.h"
 
 typedef struct {
     uint8_t data[SHA256_LEN];

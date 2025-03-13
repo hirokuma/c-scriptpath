@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "libwally-core/include/wally_address.h"
-#include "libwally-core/include/wally_crypto.h"
-#include "libwally-core/include/wally_map.h"
-#include "libwally-core/include/wally_script.h"
+#include "wally_address.h"
+#include "wally_crypto.h"
+#include "wally_map.h"
+#include "wally_script.h"
 
 #include "btc_buf.h"
 #include "btc_merkle.h"
@@ -191,7 +191,8 @@ void sample2(void)
         &leaf_hash_bob,
     };
     uint256_t merkle_root;
-    rc = calc_merkle_root(&merkle_root, leaves, ARRAY_SIZE(leaves));
+    rc = calc_merkle_root(&merkle_root, leaves, ARRAY_SIZE(leaves),
+            btc_p2tr_merkle_merge);
     if (rc != 0) {
         printf("error: calc_merkle_root %d\n", rc);
         return;

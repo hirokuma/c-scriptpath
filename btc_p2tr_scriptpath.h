@@ -1,9 +1,14 @@
 #ifndef BTC_P2TR_SCRIPTPATH_H
 #define BTC_P2TR_SCRIPTPATH_H
 
-#include "libwally-core/include/wally_script.h"
+#include "wally_script.h"
 
 #include "btc_types.h"
+
+int btc_p2tr_merkle_merge(
+    uint256_t *merged,
+    const uint256_t *p1,
+    const uint256_t *p2);
 
 int btc_p2tr_sp_leafhash(
     uint8_t hash[SHA256_LEN],

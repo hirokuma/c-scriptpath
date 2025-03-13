@@ -1,11 +1,33 @@
 #include <string.h>
 
-#include "libwally-core/include/wally_crypto.h"
-#include "libwally-core/include/wally_address.h"
-#include "libwally-core/include/wally_script.h"
+#include "wally_crypto.h"
+#include "wally_address.h"
+#include "wally_script.h"
 
 #include "btc_p2tr_scriptpath.h"
 #include "btc_buf.h"
+
+
+int btc_p2tr_merkle_merge(uint256_t *merged, const uint256_t *p1, const uint256_t *p2)
+{
+    const uint8_t *s1;
+    const uint8_t *s2;
+    if (memcmp(p1, p2, SHA256_LEN) < 0) {
+        s1 = p1->data;
+        s2 = p2->data;
+    } else {
+        s1 = p2->data;
+        s2 = p1->data;
+    }
+    uint8_t buf[SHA256_LEN * 2];
+    memcpy(buf, s1, SHA256_LEN);
+    memcpy(buf + SHA256_LEN, s2, SHA256_LEN);
+    int rc = wally_bip340_tagged_hash(
+        buf, sizeof(buf),
+        "TapBranch",
+        merged->data, sizeof(uint256_t));
+    return rc;
+}
 
 int btc_p2tr_sp_leafhash(
     uint8_t hash[SHA256_LEN],
