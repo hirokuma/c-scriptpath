@@ -2,8 +2,7 @@
 
 #include "wally_core.h"
 
-void sample1(void);
-void sample2(void);
+void sample3(void);
 
 int main(int argc, char *argv[])
 {
@@ -15,11 +14,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    printf("- sample1 ----------------\n");
-    sample1();
-
-    printf("\n\n- sample2 ----------------\n");
-    sample2();
+    printf("- sample3 ----------------\n");
+    sample3();
 
     rc = wally_cleanup(0);
     if (rc != WALLY_OK) {
