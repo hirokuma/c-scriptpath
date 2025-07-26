@@ -1,3 +1,5 @@
+// BIP-112(OP_CHECKSEQUENCEVERIFY) test
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
