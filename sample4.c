@@ -1,4 +1,4 @@
-// BIP-112(OP_CHECKSEQUENCEVERIFY) test
+// BIP-68(OP_CHECKSEQUENCEVERIFY) test
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -61,7 +61,7 @@ void sample4(void)
     int rc;
 
     // leaf script
-    //      155 OP_CHECKLOCKTIMEVERIFY
+    //      5 OP_CHECKSEQUENCEVERIFY
     //      OP_EQUAL
     btc_bufp_t leaf_script;
     btc_bufp_alloc(&leaf_script, sizeof(SCRIPT));

@@ -2,7 +2,7 @@ OUTPUT_FILENAME = tst
 OUTPUT_BINARY_DIRECTORY = .
 
 # source files
-C_DIRECTORY = ./src
+C_DIRECTORY = .
 C_FILES += \
 	btc_buf.c\
 	btc_merkle.c\

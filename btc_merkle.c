@@ -43,6 +43,7 @@ int calc_merkle_root(
 {
     int height = (int)ceil(log2(1.0 * cnt));
     uint256_t *p = (uint256_t *)malloc(SHA256_LEN * cnt);
+    uint256_t *in = p;
     for (int i = 0; i < cnt; i++) {
         memcpy(p[i].data, leaves[i]->data, SHA256_LEN);
     }
@@ -56,7 +57,7 @@ int calc_merkle_root(
         keep = 0;
     }
     memcpy(root->data, p[0].data, SHA256_LEN);
-    free(p);
+    free(in);
 
     return 0;
 }
