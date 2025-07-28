@@ -15,6 +15,7 @@ int main(int argc, char *argv[])
     }
 
     int input;
+    char prevTxStr[1024];
     printf("Enter\n");
     printf("   1: get HTLC script address\n");
     printf("   2: redeem by preimage\n");
@@ -23,14 +24,17 @@ int main(int argc, char *argv[])
     input = getchar();
     switch (input) {
         case '1':
-            htlc(true);
+            htlc(HTLC_SCRIPT_ADDRESS, NULL);
             break;
         case '2':
-            printf("You entered 2\n");
-            htlc(false);
+            printf("Enter raw transaction: ");
+            scanf("%1023s", prevTxStr);
+            htlc(HTLC_PREIMAGE_REDEEM, prevTxStr);
             break;
         case '3':
-            printf("You entered 3\n");
+            printf("Enter raw transaction: ");
+            scanf("%1023s", prevTxStr);
+            htlc(HTLC_CSV_REDEEM, prevTxStr);
             break;
         default:
             printf("Invalid input\n");

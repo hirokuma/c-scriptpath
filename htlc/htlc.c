@@ -13,6 +13,8 @@
 #include "btc_merkle.h"
 #include "btc_p2tr_scriptpath.h"
 
+#include "htlc.h"
+
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 static const char ADDR_FAMILY[] = "bcrt";
 
@@ -54,6 +56,7 @@ static const uint8_t PREIMAGE[] = {
     0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
     0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
 };
+// 4773d12e2371bb935b9a0f5439b4a1c3ad3f2414b86980f8418d1cfabdfadfef
 static const uint8_t PAYMENT_HASH[] = {
     0x47, 0x73, 0xd1, 0x2e, 0x23, 0x71, 0xbb, 0x93,
     0x5b, 0x9a, 0x0f, 0x54, 0x39, 0xb4, 0xa1, 0xc3,
@@ -61,24 +64,28 @@ static const uint8_t PAYMENT_HASH[] = {
     0x41, 0x8d, 0x1c, 0xfa, 0xbd, 0xfa, 0xdf, 0xef,
 };
 
+// 00112233445566778899aabbccddee0000112233445566778899aabbccddee00
 static const uint8_t ALICE_PRIVKEY[] = {
     0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
     0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0x00,
     0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
     0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0x00,
 };
+// 7fa033135f9f099d243ade11f8b9265d58a6316e930ce0cd57824ef967bb629d
 static const uint8_t ALICE_PUBKEY[] = {
     0x7f, 0xa0, 0x33, 0x13, 0x5f, 0x9f, 0x09, 0x9d,
     0x24, 0x3a, 0xde, 0x11, 0xf8, 0xb9, 0x26, 0x5d,
     0x58, 0xa6, 0x31, 0x6e, 0x93, 0x0c, 0xe0, 0xcd,
     0x57, 0x82, 0x4e, 0xf9, 0x67, 0xbb, 0x62, 0x9d,
 };
+// 00112233445566778899aabbccddee0100112233445566778899aabbccddee01
 static const uint8_t BOB_PRIVKEY[] = {
     0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
     0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0x01,
     0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
     0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0x01,
 };
+// 3dce6c620fcabcfedc2ce2c46fbd57ea717db26df30afc95082b2fdd67ecd16a
 static const uint8_t BOB_PUBKEY[] = {
     0x3d, 0xce, 0x6c, 0x62, 0x0f, 0xca, 0xbc, 0xfe,
     0xdc, 0x2c, 0xe2, 0xc4, 0x6f, 0xbd, 0x57, 0xea,
@@ -93,9 +100,8 @@ static const uint8_t INTERNAL_PRIVKEY[] = {
     0x28, 0xb3, 0xa4, 0xb8, 0xb2, 0xa7, 0x6f, 0x4c,
 };
 
-// sent to Tapscript address
-static const char TX_PREVIOUS_STR[] = "020000000001016ce315995d723c811aa82d846c41402d0b7e9da1b12e373b53ef666186ee2f060000000000fdffffff0210270000000000002251202f9a636f4a7157d66bb01a850c5805f0920e429aebf36402cf93ca94548459af4bca052a010000002251200c513215fefbe32a458b540568c95a9ce9a84a322b19b7b98783415d2a644e420247304402202ead53b7b06d29d3b9859239e394fe66ecd172ad949134070dec7a501f64362c0220103111ca4a491e4b27ab0c74af17816f477692000bf16062bd3b47a57f8bf0fb0121022109869f5bbb205a5a860862d7b0dce0d5bc425ca35e6ca05f270ef0a0f8e74296000000";
-static const uint32_t SEQUENCE = 5;
+// redeem Tapscript address
+static const uint32_t CSV_SEQUENCE = 5;
 static const int FEE = 300;
 
 
@@ -195,6 +201,7 @@ static int create_bech32m_address(
     return rc;
 }
 
+// [OP_SHA256 <payment_hash> OP_EQUALVERIFY <Alice_pubkey> OP_CHECKSIG]
 static int create_script_preimage(btc_bufp_t *leaf_script_preimage)
 {
     btc_bufp_alloc(leaf_script_preimage, 256);
@@ -208,12 +215,13 @@ static int create_script_preimage(btc_bufp_t *leaf_script_preimage)
     return 0;
 }
 
+// [OP_5 OP_CHECKSEQUENCEVERIFY OP_DROP <Bob_pubkey> OP_CHECKSIG]
 static int create_script_csv(btc_bufp_t *leaf_script_csv)
 {
     btc_bufp_alloc(leaf_script_csv, 256);
     btc_bufp_push1(leaf_script_csv, OP_5);
     btc_bufp_push1(leaf_script_csv, OP_CHECKSEQUENCEVERIFY);
-    btc_bufp_push1(leaf_script_csv, OP_EQUALVERIFY);
+    btc_bufp_push1(leaf_script_csv, OP_DROP);
     btc_bufp_push_array(leaf_script_csv, BOB_PUBKEY, sizeof(BOB_PUBKEY));
     btc_bufp_push1(leaf_script_csv, OP_CHECKSIG);
     btc_bufp_trunc(leaf_script_csv);
@@ -242,13 +250,18 @@ EXIT:
     return rc;
 }
 
-void htlc(bool address_only)
+void htlc(HTLC_REDEEM_TYPE redeem_type, const char *prevTxStr)
 {
+    if (redeem_type < HTLC_SCRIPT_ADDRESS || redeem_type > HTLC_CSV_REDEEM) {
+        printf("error: invalid redeem type\n");
+        return;
+    }
+
     int rc;
 
     struct wally_tx_input *tx_input0 = NULL;
     struct wally_tx *tx_prev = NULL;
-    struct wally_tx *tx_preimage = NULL;
+    struct wally_tx *tx_target = NULL;
     btc_bufp_t leaf_script_preimage = BTC_BUFP_INIT();
     btc_bufp_t leaf_script_csv = BTC_BUFP_INIT();
     uint256_t leaf_hash_preimage;
@@ -324,7 +337,7 @@ void htlc(bool address_only)
 
     printf("address: %s\n", address);
 
-    if (address_only) {
+    if (redeem_type == HTLC_SCRIPT_ADDRESS) {
         goto EXIT;
     }
 
@@ -333,7 +346,7 @@ void htlc(bool address_only)
 
     // read transaction spent to Tapscript address
     rc = wally_tx_from_hex(
-        TX_PREVIOUS_STR,
+        prevTxStr,
         WALLY_TX_FLAG_USE_WITNESS,
         &tx_prev);
     if (rc != WALLY_OK) {
@@ -350,9 +363,9 @@ void htlc(bool address_only)
 
     // search previous output index from transaction
     int prevOutIndex;
-    for (int prevOutIndex = 0; prevOutIndex < tx_prev->num_outputs; prevOutIndex++) {
-        if (memcmp(witnessProgram, tx_prev->outputs[0].script, tx_prev->outputs[prevOutIndex].script_len) == 0) {
-            printf("witness program mismatch #0\n");
+    for (prevOutIndex = 0; prevOutIndex < tx_prev->num_outputs; prevOutIndex++) {
+        if (memcmp(witnessProgram, tx_prev->outputs[prevOutIndex].script, tx_prev->outputs[prevOutIndex].script_len) == 0) {
+            printf("witness program match #%d\n", prevOutIndex);
             break;
         }
     }
@@ -361,24 +374,28 @@ void htlc(bool address_only)
         goto EXIT;
     }
 
-
-    // redeem by leaf_script_preimage
-
     rc = wally_tx_init_alloc(
         WALLY_TX_VERSION_2, // version
         0, // locktime
         1, // vin_cnt
         1, // vout_cnt
-        &tx_preimage);
+        &tx_target);
     if (rc != WALLY_OK) {
         printf("error: wally_tx_init_alloc fail: %d\n", rc);
         goto EXIT;
     }
 
+    int sequence;
+    if (redeem_type == HTLC_PREIMAGE_REDEEM) {
+        sequence = WALLY_TX_SEQUENCE_FINAL;
+    } else if (redeem_type == HTLC_CSV_REDEEM) {
+        sequence = CSV_SEQUENCE;
+    }
+
     rc = wally_tx_input_init_alloc(
         tx_prev_txid, sizeof(tx_prev_txid),
         prevOutIndex,
-        WALLY_TX_SEQUENCE_FINAL,
+        sequence,
         NULL, 0, // no scriptSig
         NULL, // no witness
         &tx_input0);
@@ -386,7 +403,7 @@ void htlc(bool address_only)
         printf("error: wally_tx_input_init_alloc fail: %d\n", rc);
         goto EXIT;
     }
-    rc = wally_tx_add_input(tx_preimage, tx_input0);
+    rc = wally_tx_add_input(tx_target, tx_input0);
     if (rc != WALLY_OK) {
         printf("error: wally_tx_add_input fail: %d\n", rc);
         goto EXIT;
@@ -409,7 +426,7 @@ void htlc(bool address_only)
         .script_len = outAddrLen,
         .features = 0,
     };
-    rc = wally_tx_add_output(tx_preimage, &TX_OUTPUT);
+    rc = wally_tx_add_output(tx_target, &TX_OUTPUT);
     if (rc != WALLY_OK) {
         printf("error: wally_tx_add_output fail: %d\n", rc);
         return;
@@ -432,16 +449,32 @@ void htlc(bool address_only)
 
     const uint64_t VALUES[] = { tx_prev->outputs[prevOutIndex].satoshi };
 
-    btc_bufp_t *leaf_script = &leaf_script_preimage;
-    const uint8_t *privkey = ALICE_PRIVKEY;
+    btc_bufp_t *target_script;
+    uint256_t other_hash;
+    const uint8_t *privkey;
+    struct wally_tx_witness_stack *wit_stack;
+    int stack_num;
+
+    if (redeem_type == HTLC_PREIMAGE_REDEEM) {
+        target_script = &leaf_script_preimage;
+        other_hash = leaf_hash_csv;
+        privkey = ALICE_PRIVKEY;
+        stack_num = 4; // sig, preimage, script, control block
+    } else if (redeem_type == HTLC_CSV_REDEEM) {
+        target_script = &leaf_script_csv;
+        other_hash = leaf_hash_preimage;
+        privkey = BOB_PRIVKEY;
+        stack_num = 3; // sig, script, control block
+    }
+
     uint8_t sig[EC_SIGNATURE_LEN];
     rc = btc_p2tr_sp_sig(
         sig, sizeof(sig),
         0,
-        tx_preimage,
+        tx_target,
         scriptPubKeys,
         VALUES, ARRAY_SIZE(VALUES),
-        leaf_script->buf.data,  leaf_script->pos,
+        target_script->buf.data,  target_script->pos,
         WALLY_SIGHASH_DEFAULT,
         privkey
     );
@@ -450,46 +483,46 @@ void htlc(bool address_only)
         return;
     }
 
-    // witness = 4(sig, preimage, script, control block)
-    struct wally_tx_witness_stack *wit_stack;
-    rc = wally_tx_witness_stack_init_alloc(4, &wit_stack);
+    rc = wally_tx_witness_stack_init_alloc(stack_num, &wit_stack);
     if (rc != WALLY_OK) {
         printf("error: wally_tx_witness_stack_init_alloc fail: %d\n", rc);
         return;
     }
 
-    // [0] sig
+    // signature
     rc = wally_tx_witness_stack_add(wit_stack, sig, sizeof(sig));
     if (rc != WALLY_OK) {
-        printf("error: wally_tx_witness_stack_add[0] fail: %d\n", rc);
+        printf("error: wally_tx_witness_stack_add[sig] fail: %d\n", rc);
         return;
     }
-    // [1] preimage
-    rc = wally_tx_witness_stack_add(wit_stack, PREIMAGE, sizeof(PREIMAGE));
+    if (redeem_type == HTLC_PREIMAGE_REDEEM) {
+        // preimage
+        rc = wally_tx_witness_stack_add(wit_stack, PREIMAGE, sizeof(PREIMAGE));
+        if (rc != WALLY_OK) {
+            printf("error: wally_tx_witness_stack_add[preimage] fail: %d\n", rc);
+            return;
+        }
+    }
+    // script
+    rc = wally_tx_witness_stack_add(wit_stack, target_script->buf.data, target_script->pos);
     if (rc != WALLY_OK) {
-        printf("error: wally_tx_witness_stack_add[1] fail: %d\n", rc);
+        printf("error: wally_tx_witness_stack_add[script] fail: %d\n", rc);
         return;
     }
-    // [2] leaf script
-    rc = wally_tx_witness_stack_add(wit_stack, leaf_script->buf.data, leaf_script->pos);
-    if (rc != WALLY_OK) {
-        printf("error: wally_tx_witness_stack_add[2] fail: %d\n", rc);
-        return;
-    }
-    // [3] control block
+    // control block
     btc_bufp_t ctrl_block;
     btc_bufp_alloc(&ctrl_block, 1 + EC_XONLY_PUBLIC_KEY_LEN + SHA256_LEN);
     btc_bufp_push1(&ctrl_block, 0xc0 + parity);
     btc_bufp_push(&ctrl_block, ipubkey, sizeof(ipubkey));
-    btc_bufp_push(&ctrl_block, leaf_hash_csv.data, sizeof(leaf_hash_csv));
+    btc_bufp_push(&ctrl_block, other_hash.data, sizeof(other_hash));
     rc = wally_tx_witness_stack_add(wit_stack, ctrl_block.buf.data, ctrl_block.pos);
     btc_bufp_free(&ctrl_block);
     if (rc != WALLY_OK) {
-        printf("error: wally_tx_witness_stack_add[3] fail: %d\n", rc);
+        printf("error: wally_tx_witness_stack_add[control block] fail: %d\n", rc);
         return;
     }
     // set witness to input
-    rc = wally_tx_set_input_witness(tx_preimage, 0, wit_stack);
+    rc = wally_tx_set_input_witness(tx_target, 0, wit_stack);
     if (rc != WALLY_OK) {
         printf("error: wally_tx_set_input_witness fail: %d\n", rc);
         return;
@@ -499,14 +532,14 @@ void htlc(bool address_only)
     uint8_t txData[1024];
     size_t txLen = 0;
     rc = wally_tx_to_bytes(
-        tx_preimage,
+        tx_target,
         WALLY_TX_FLAG_USE_WITNESS,
         txData, sizeof(txData), &txLen);
     if (rc != WALLY_OK) {
         printf("error: wally_tx_to_bytes fail: %d\n", rc);
         return;
     }
-    printf("tx_preimage: ");
+    printf("\nbitcoin-cli sendrawtransaction ");
     dump(txData, txLen);
 
 
@@ -514,7 +547,7 @@ EXIT:
     wally_free_string(address);
     wally_tx_input_free(tx_input0);
     wally_tx_free(tx_prev);
-    wally_tx_free(tx_preimage);
+    wally_tx_free(tx_target);
     btc_bufp_free(&leaf_script_preimage);
     btc_bufp_free(&leaf_script_csv);
 }
