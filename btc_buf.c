@@ -66,6 +66,18 @@ void btc_bufp_push1(btc_bufp_t *bufp, uint8_t data)
     btc_bufp_push(bufp, (const uint8_t *)&data, sizeof(data));
 }
 
+void btc_bufp_push_array(btc_bufp_t *bufp, const uint8_t *data, size_t len)
+{
+    if (bufp->buf.len < bufp->pos + len + 1) {
+        bufp->buf.len += SZ_PUSH;
+        bufp->buf.data = (uint8_t *)realloc(bufp->buf.data, bufp->buf.len);
+    }
+    bufp->buf.data[bufp->pos] = (uint8_t)len;
+    bufp->pos++;
+    memcpy(bufp->buf.data + bufp->pos, data, len);
+    bufp->pos += len;
+}
+
 void btc_bufp_push_uint16le(btc_bufp_t *bufp, uint16_t val)
 {
     val = htole16(val);
