@@ -11,6 +11,7 @@ C_FILES += \
 	sample2.c\
 	sample3.c\
 	sample4.c\
+	sample5.c\
 	main.c
 
 # object files
