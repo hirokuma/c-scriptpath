@@ -20,14 +20,13 @@ TESTS_FILES += \
 TESTS_SOURCE_FILES = $(addprefix $(TESTS_DIRECTORY)/, $(TESTS_FILES) )
 
 
-# includes common to all targets(-I<dir>)
-INC_PATHS = -I${HOME}/.local/include
+# export PKG_CONFIG_PATH=$HOME/.local/lib/pkgconfig:/usr/local/lib/pkgconfig
+PKG_CONF_LIBS=\
+	wallycore \
+	libsecp256k1
 
-# Link Library
-LIBS = -L ${HOME}/.local/lib -lwallycore -lsecp256k1 -lm
-
-CFLAGS = -I..
-LDFLAGS =
+CFLAGS = `pkg-config --cflags $(PKG_CONF_LIBS)` -I..
+LDFLAGS = `pkg-config --libs $(PKG_CONF_LIBS)` -lm
 
 
 #GNU_PREFIX := arm-none-eabi-
@@ -109,13 +108,13 @@ debug: LDFLAGS += -ggdb3 -O0
 debug: $(BUILD_DIRECTORIES) $(OBJECTS)
 	@echo [DEBUG]Linking target: $(OUTPUT_FILENAME)
 	@echo [DEBUG]CFLAGS=$(CFLAGS)
-	$(CC) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $(OUTPUT_BINARY_DIRECTORY)/$(OUTPUT_FILENAME)
+	$(CC) $(OBJECTS) $(LDFLAGS) -o $(OUTPUT_BINARY_DIRECTORY)/$(OUTPUT_FILENAME)
 
 release: CFLAGS += -DNDEBUG -O3
 release: LDFLAGS += -O3
 release: $(BUILD_DIRECTORIES) $(OBJECTS)
 	@echo [RELEASE]Linking target: $(OUTPUT_FILENAME)
-	$(NO_ECHO)$(CC) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $(OUTPUT_BINARY_DIRECTORY)/$(OUTPUT_FILENAME)
+	$(NO_ECHO)$(CC) $(OBJECTS) $(LDFLAGS) -o $(OUTPUT_BINARY_DIRECTORY)/$(OUTPUT_FILENAME)
 
 tests: CFLAGS += -DDEBUG
 tests: CFLAGS += -ggdb3 -O0
@@ -123,7 +122,7 @@ tests: LDFLAGS += -ggdb3 -O0
 tests: $(BUILD_DIRECTORIES) $(OBJECTS)
 	@echo [DEBUG]Linking target: $(OUTPUT_FILENAME)
 	@echo [DEBUG]CFLAGS=$(CFLAGS)
-	$(NO_ECHO)$(CC) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $(OUTPUT_BINARY_DIRECTORY)/$(OUTPUT_FILENAME)
+	$(NO_ECHO)$(CC) $(OBJECTS) $(LDFLAGS) -o $(OUTPUT_BINARY_DIRECTORY)/$(OUTPUT_FILENAME)
 
 ## Create build directories
 $(BUILD_DIRECTORIES):
@@ -132,12 +131,12 @@ $(BUILD_DIRECTORIES):
 # Create objects from C SRC files
 $(OBJECT_DIRECTORY)/%.o: %.c
 	@echo Compiling C file: $(notdir $<): $(CFLAGS)
-	$(NO_ECHO)$(CC) $(CFLAGS) $(INC_PATHS) -c -o $@ $<
+	$(NO_ECHO)$(CC) $(CFLAGS) -c -o $@ $<
 
 # Link
 $(OUTPUT_BINARY_DIRECTORY)/$(OUTPUT_FILENAME): $(BUILD_DIRECTORIES) $(OBJECTS)
 	@echo Linking target: $(OUTPUT_FILENAME)
-	$(NO_ECHO)$(CC) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $(OUTPUT_BINARY_DIRECTORY)/$(OUTPUT_FILENAME)
+	$(NO_ECHO)$(CC) $(OBJECTS) $(LDFLAGS) -o $(OUTPUT_BINARY_DIRECTORY)/$(OUTPUT_FILENAME)
 
 clean:
 	$(RM) $(OBJECT_DIRECTORY) $(OUTPUT_BINARY_DIRECTORY)/$(OUTPUT_FILENAME)
