@@ -19,16 +19,20 @@ OBJECT_DIRECTORY = _build
 
 # test sources
 TESTS_DIRECTORY = ./tests
-TESTS_FILES += \
+TESTS_FILES +=
 
 TESTS_SOURCE_FILES = $(addprefix $(TESTS_DIRECTORY)/, $(TESTS_FILES) )
 
+# export PKG_CONFIG_PATH=$HOME/.local/lib/pkgconfig:/usr/local/lib/pkgconfig
+PKG_CONF_LIBS=\
+	libsecp256k1 \
+	wallycore
 
 # includes common to all targets(-I<dir>)
-INC_PATHS = -I${HOME}/.local/include
+INC_PATHS = `pkg-config --cflags $(PKG_CONF_LIBS)`
 
 # Link Library
-LIBS = -L ${HOME}/.local/lib -lwallycore -lsecp256k1 -lm
+LIBS = `pkg-config --libs $(PKG_CONF_LIBS)` -lm
 
 CFLAGS =
 LDFLAGS =

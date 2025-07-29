@@ -13,16 +13,14 @@ I use system installed `libsecp256k1`(built with `--enable-module-recovery`).
 (Maybe "libsecp256k1-zkp" works fine too).
 
 ```bash
-mkdir -p libs/libwally-core
-
 git clone https://github.com/ElementsProject/libwally-core.git
 cd libwally-core
-git checkout -b v1.3.1 release_1.3.1
+git checkout -b v1.4.0 release_1.4.0
 
 ./tools/autogen.sh
-./configure --prefix `pwd`/../libs/libwally-core --enable-minimal --disable-elements --enable-standard-secp --with-system-secp256k1 --disable-shared
+./configure --enable-minimal --disable-elements --enable-standard-secp --with-system-secp256k1 --disable-shared
 make
-make install
+sudo make install
 ```
 
 ## build
@@ -62,4 +60,84 @@ witness program: 5120e73d06c3fe2521e5b711fd18653736a5f609ff945dbe52aff582686f1e6
 address: bcrt1puu7sdsl7y5s7tdc3l5vx2dek5hmqnlu5tkl99tl4sf5x78nfuw3stzh7vk
 sig: a2e2a27bff7727101474ddb8674652fb00c31722b81e9ba9f0b21d19cb58c370909ffbf642acb27538d0967a191f779dd44dd7f7a512082c49f1eea1393e2efe
 tx: 02000000000101bdaf6be98727a8034ca59f21113053d17d89468946d2b9ff860712effcbcf8ee0100000000ffffffff01b882010000000000160014450589517d5d42e7da15d9dc9b1264ede92956380340a2e2a27bff7727101474ddb8674652fb00c31722b81e9ba9f0b21d19cb58c370909ffbf642acb27538d0967a191f779dd44dd7f7a512082c49f1eea1393e2efe22207fa033135f9f099d243ade11f8b9265d58a6316e930ce0cd57824ef967bb629dac41c196cb997b084bdb0ab8697ea3680451409312613bcac477dec392696b99ed5bad47b07ec5a831973b30f67f0dd2449e8e1455a32a967564a56f71518f0a31bf2800000000
+
+
+- sample3 ----------------
+script: 029b00b187
+tap leaf hash: aaa8ba566b6254cd5275676cbb75c9df56c784f2aa1a41496c6e0398cee89785
+merkle root: aaa8ba566b6254cd5275676cbb75c9df56c784f2aa1a41496c6e0398cee89785
+tweak pubkey: 0c5cddf9ca09101885ce76ffc4ce0650681690477571e95aead92fb5394bb75b
+parity: 0
+witness program: 51200c5cddf9ca09101885ce76ffc4ce0650681690477571e95aead92fb5394bb75b
+address: bcrt1pp3wdm7w2pygp3pwwwmlufnsx2p5pdyz8w4c7jkh2myhm2w2tkads4st9hf
+tx: 020000000001014e01b6c2354f7d4a6df8bdb8457f087bd42eaac7c4e103e8ee25a14818254c980000000000fdffffff01983a000000000000160014d116846349274371586729117c74bf2a47d5310e03029b0005029b00b18721c0924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a33299b000000
+
+
+- sample4 ----------------
+script: 55b287
+tap leaf hash: 1124701590da23bbe45cc88cd2dbbcf29eff73c596dc041b44b4b8edd8e00f58
+merkle root: 1124701590da23bbe45cc88cd2dbbcf29eff73c596dc041b44b4b8edd8e00f58
+tweak pubkey: 3272e3229fc21b6f23834d14515a4c441d9c38772eda25d3da83ce3a8b29ed3e
+parity: 0
+witness program: 51203272e3229fc21b6f23834d14515a4c441d9c38772eda25d3da83ce3a8b29ed3e
+address: bcrt1pxfewxg5lcgdk7gurf529zkjvgswecwrh9mdzt576s08r4zefa5lqe4wa7e
+tx: 020000000001017b17189af816263db1d2ea5b6ad4d6ce6808e49ad96c5d639f66c7d222d8a17201000000000500000001983a000000000000160014d116846349274371586729117c74bf2a47d5310e0301050355b28721c0924c163b385af7093440184af6fd6244936d1288cbb41cc3812286d3f83a332900000000
+
+
+- sample5 ----------------
+internal pubkey: f30544d6009c8d8d94f5d030b2e844b1a3ca036255161c479db1cca5b374dd1c
+Alice script: 029000b275209997a497d964fc1a62885b05a51166a65a90df00492c8d7cf61d6accf54803beac
+Bob script: a8206c60f404f8167a38fc70eaf8aa17ac351023bef86bcb9d1086a19afe95bd533388204edfcf9dfe6c0b5c83d1ab3f78d1b39a46ebac6798e08e19761f5ed89ec83c10ac
+Alice leaf hash: c81451874bd9ebd4b6fd4bba1f84cdfb533c532365d22a0a702205ff658b17c9
+Bob leaf hash: 632c8632b4f29c6291416e23135cf78ecb82e525788ea5ed6483e3c6ce943b42
+merkle root: 41646f8c1fe2a96ddad7f5471bc4fee7da98794ef8c45a4f4fc6a559d60c9f6b
+tweak pubkey: a5ba0871796eb49fb4caa6bf78e675b9455e2d66e751676420f8381d5dda8951
+parity: 1
+witness program: 5120a5ba0871796eb49fb4caa6bf78e675b9455e2d66e751676420f8381d5dda8951
+address: bc1p5kaqsuted66fldx256lh3en4h9z4uttxuagkwepqlqup6hw639gspmmz4d
+address not same
 ```
+
+## HTLC sample
+
+Regtest HTLC sample
+
+* script 1
+
+```text
+    <Alice_signature>
+    <preimage>
+    ---
+    OP_SHA256
+    <paymnet_hash>
+    OP_EQUALVERIFY
+    <Alice_pubkey>
+    OP_CHECKSIG
+```
+
+* script 2
+
+```text
+    <Bob_signature>
+    ---
+    5
+    OP_CHECKSEQUENCEVERIFY
+    OP_EQUALVERIFY
+    <Bob_pubkey>
+    OP_CHECKSIG
+```
+
+### Run
+
+```console
+$ cd htlc
+$ make
+$ ./tst
+```
+
+1. Enter `1` and show an HTLC script address.
+2. Send BTC to the script address on Regtest and get a TXID.
+3. Get the raw transaction.
+4. Enter `2` and input the raw transaction, show a raw transaction to redeem by preimage.
+5. Enter `3` and input the raw transaction, show a raw transaction to redeem by Delay(>= 5 blocks).
+
