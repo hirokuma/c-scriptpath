@@ -4,14 +4,10 @@ OUTPUT_BINARY_DIRECTORY = .
 # source files
 C_DIRECTORY = .
 C_FILES += \
-	btc_buf.c\
-	btc_merkle.c\
-	btc_p2tr_scriptpath.c\
-	sample1.c\
-	sample2.c\
-	sample3.c\
-	sample4.c\
-	sample5.c\
+	../btc_buf.c\
+	../btc_merkle.c\
+	../btc_p2tr_scriptpath.c\
+	htlc.c\
 	main.c
 
 # object files
@@ -19,22 +15,18 @@ OBJECT_DIRECTORY = _build
 
 # test sources
 TESTS_DIRECTORY = ./tests
-TESTS_FILES +=
+TESTS_FILES += \
 
 TESTS_SOURCE_FILES = $(addprefix $(TESTS_DIRECTORY)/, $(TESTS_FILES) )
 
-# export PKG_CONFIG_PATH=$HOME/.local/lib/pkgconfig:/usr/local/lib/pkgconfig
-PKG_CONF_LIBS=\
-	libsecp256k1 \
-	wallycore
 
 # includes common to all targets(-I<dir>)
-INC_PATHS = `pkg-config --cflags $(PKG_CONF_LIBS)`
+INC_PATHS = -I${HOME}/.local/include
 
 # Link Library
-LIBS = `pkg-config --libs $(PKG_CONF_LIBS)` -lm
+LIBS = -L ${HOME}/.local/lib -lwallycore -lsecp256k1 -lm
 
-CFLAGS =
+CFLAGS = -I..
 LDFLAGS =
 
 
@@ -102,7 +94,7 @@ C_SOURCE_FILES = $(addprefix $(C_DIRECTORY)/, $(C_FILES))
 C_SOURCE_FILE_NAMES = $(notdir $(C_SOURCE_FILES))
 C_PATHS = $(call rmdup, $(dir $(C_SOURCE_FILES)))
 
-C_OBJECTS = $(addprefix $(OBJECT_DIRECTORY)/, $(C_FILES:.c=.o))
+C_OBJECTS = $(addprefix $(OBJECT_DIRECTORY)/, $(notdir $(C_FILES:.c=.o)))
 OBJECTS = $(C_OBJECTS)
 OBJECTS_DIRECTORIES = $(call rmdup, $(dir $(OBJECTS)))
 
