@@ -36,7 +36,7 @@ OP_ENDIF
     <preimage>
     ---
     OP_SHA256
-    <paymnet_hash>
+    <payment_hash>
     OP_EQUALVERIFY
     <Alice_pubkey>
     OP_CHECKSIG
@@ -46,7 +46,7 @@ OP_ENDIF
     ---
     5
     OP_CHECKSEQUENCEVERIFY
-    OP_EQUALVERIFY
+    OP_DROP
     <Bob_pubkey>
     OP_CHECKSIG
 */
